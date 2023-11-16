@@ -45,7 +45,8 @@ def detect_fps(target_path: str) -> float:
 def extract_frames(target_path: str, fps: float = 30) -> bool:
     temp_directory_path = get_temp_directory_path(target_path)
     temp_frame_quality = roop.globals.temp_frame_quality * 31 // 100
-    return run_ffmpeg(['-hwaccel', 'auto', '-i', target_path, '-q:v', str(temp_frame_quality), '-pix_fmt', 'rgb24', '-vf', 'fps=' + str(fps), os.path.join(temp_directory_path, '%04d.' + roop.globals.temp_frame_format)])
+    # return run_ffmpeg(['-hwaccel', 'auto', '-i', target_path, '-q:v', str(temp_frame_quality), '-pix_fmt', 'rgb24', '-vf', 'fps=' + str(fps), os.path.join(temp_directory_path, '%04d.' + roop.globals.temp_frame_format)])
+    return run_ffmpeg(['-i', target_path, '-f', 'image2', '-vf', 'fps='+ str(fps), '-qscale:v', '2', os.path.join(temp_directory_path, '%04d.' + roop.globals.temp_frame_format)])
 
 
 def create_video(target_path: str, fps: float = 30) -> bool:
@@ -58,6 +59,8 @@ def create_video(target_path: str, fps: float = 30) -> bool:
     if roop.globals.output_video_encoder in ['h264_nvenc', 'hevc_nvenc']:
         commands.extend(['-cq', str(output_video_quality)])
     commands.extend(['-pix_fmt', 'yuv420p', '-vf', 'colorspace=bt709:iall=bt601-6-625:fast=1', '-y', temp_output_path])
+    commands = ['-r', str(fps), '-f', 'image2', '-i', os.path.join(temp_directory_path, '%04d.' + roop.globals.temp_frame_format), '-c:v', 'libx265', '-b:v', '4M', '-y', temp_output_path]
+    
     return run_ffmpeg(commands)
 
 
@@ -70,12 +73,33 @@ def restore_audio(target_path: str, output_path: str) -> None:
 
 def get_temp_frame_paths(target_path: str) -> List[str]:
     temp_directory_path = get_temp_directory_path(target_path)
+
+    # # add by lzx 20230927
+    # print("temp_directory_path -- >>> ", temp_directory_path)
+    # src_img_list = os.listdir(target_path)
+    # for img in src_img_list:
+    #     print(img)
+    #     src_file = os.path.join(target_path, img)
+    #     dst_file = os.path.join(temp_directory_path, img)
+    #     shutil.copy(src_file, dst_file)
+
+    # test_path = os.path.join(glob.escape(temp_directory_path), '*.' + roop.globals.temp_frame_format)
+    # print("-----", test_path)
+    # test_list = glob.glob((os.path.join(glob.escape(temp_directory_path), '*.' + roop.globals.temp_frame_format)))
+    # print("%%%%%%", test_list)
+
+    
     return glob.glob((os.path.join(glob.escape(temp_directory_path), '*.' + roop.globals.temp_frame_format)))
 
 
 def get_temp_directory_path(target_path: str) -> str:
     target_name, _ = os.path.splitext(os.path.basename(target_path))
     target_directory_path = os.path.dirname(target_path)
+    
+    # add by lzx 20230927
+    # target_directory_path, _ = os.path.splitext(target_directory_path)
+    print("target_directory_path --- > ", target_directory_path)
+
     return os.path.join(target_directory_path, TEMP_DIRECTORY, target_name)
 
 
@@ -95,6 +119,7 @@ def normalize_output_path(source_path: str, target_path: str, output_path: str) 
 
 def create_temp(target_path: str) -> None:
     temp_directory_path = get_temp_directory_path(target_path)
+    print("temp_directory_path -- ", temp_directory_path)
     Path(temp_directory_path).mkdir(parents=True, exist_ok=True)
 
 

@@ -51,4 +51,14 @@ def find_similar_face(frame: Frame, reference_face: Face) -> Optional[Face]:
                 distance = numpy.sum(numpy.square(face.normed_embedding - reference_face.normed_embedding))
                 if distance < roop.globals.similar_face_distance:
                     return face
+        
+        min_dis = 1.0
+        best_face = None
+        for face in many_faces:
+            if hasattr(face, 'normed_embedding') and hasattr(reference_face, 'normed_embedding'):
+                distance = numpy.sum(numpy.square(face.normed_embedding - reference_face.normed_embedding))
+                if distance < min_dis:
+                    best_face = face
+                    min_dis = distance
+        return best_face
     return None
